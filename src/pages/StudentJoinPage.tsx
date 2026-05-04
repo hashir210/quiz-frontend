@@ -5,20 +5,35 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 
+import api from '../api/client';
+
 export default function StudentJoinPage() {
   const navigate = useNavigate();
   const { roomCode } = useParams();
   const [name, setName] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleJoin = (e: React.FormEvent) => {
+  const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
       setError('Name is required');
       return;
     }
-    setError('');
-    navigate(`/play/${roomCode}/game`);
+    
+    setLoading(true);
+    try {
+      // 1. Validate room exists via API
+      await api.get(`/api/sessions/${roomCode}/validate`);
+      
+      // We pass the name via state to the next page where the websocket will actually connect
+      setError('');
+      navigate(`/play/${roomCode}/game`, { state: { playerName: name } });
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Invalid room code or quiz ended');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

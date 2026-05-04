@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '../api/client';
 import Logo from '../components/Logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,9 +18,28 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, type: 'signin' | 'signup') => {
     e.preventDefault();
-    navigate('/dashboard');
+    try {
+      if (type === 'signin') {
+        const res = await api.post('/api/auth/login', { email, password });
+        localStorage.setItem('token', res.data.access_token);
+        localStorage.setItem('role', res.data.role);
+        localStorage.setItem('name', res.data.name);
+        navigate('/dashboard');
+      } else {
+        await api.post('/api/auth/register', { email, password, name });
+        // After successful signup, log them in automatically
+        const res = await api.post('/api/auth/login', { email, password });
+        localStorage.setItem('token', res.data.access_token);
+        localStorage.setItem('role', res.data.role);
+        localStorage.setItem('name', res.data.name);
+        navigate('/dashboard');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Authentication failed. Please check your credentials.');
+    }
   };
 
   return (
@@ -80,7 +100,7 @@ export default function LoginPage() {
             </TabsList>
 
             <TabsContent value="signin">
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={(e) => handleSubmit(e, 'signin')} className="space-y-4">
                 <div className="relative">
                   <svg className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--theme-text-dim)]" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
@@ -134,7 +154,7 @@ export default function LoginPage() {
             </TabsContent>
 
             <TabsContent value="signup">
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={(e) => handleSubmit(e, 'signup')} className="space-y-4">
                 <Input
                   type="text"
                   placeholder="Full name"
