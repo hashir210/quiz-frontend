@@ -17,9 +17,49 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState('');
+  const [error, setError] = useState('');
+
+  const validateInput = (type: 'signin' | 'signup') => {
+    setError('');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address.');
+      return false;
+    }
+    
+    if (type === 'signup') {
+      if (password.length < 8) {
+        setError('Password must be at least 8 characters.');
+        return false;
+      }
+      if (!/[A-Z]/.test(password)) {
+        setError('Password must contain an uppercase letter.');
+        return false;
+      }
+      if (!/[a-z]/.test(password)) {
+        setError('Password must contain a lowercase letter.');
+        return false;
+      }
+      if (!/[0-9]/.test(password)) {
+        setError('Password must contain a number.');
+        return false;
+      }
+      if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+        setError('Password must contain a special character.');
+        return false;
+      }
+      if (!name.trim()) {
+        setError('Name is required.');
+        return false;
+      }
+    }
+    return true;
+  };
 
   const handleSubmit = async (e: React.FormEvent, type: 'signin' | 'signup') => {
     e.preventDefault();
+    if (!validateInput(type)) return;
+
     try {
       if (type === 'signin') {
         const res = await api.post('/api/auth/login', { email, password });
@@ -36,9 +76,13 @@ export default function LoginPage() {
         localStorage.setItem('name', res.data.name);
         navigate('/dashboard');
       }
-    } catch (error) {
-      console.error(error);
-      alert('Authentication failed. Please check your credentials.');
+    } catch (err: any) {
+      console.error(err);
+      if (err.message === 'Network Error') {
+        setError('Network error: Ensure your backend CORS (FRONTEND_URL) allows this Vercel URL.');
+      } else {
+        setError(err.response?.data?.detail || 'Authentication failed. Please check your credentials.');
+      }
     }
   };
 
@@ -98,6 +142,12 @@ export default function LoginPage() {
               <TabsTrigger value="signin" className="flex-1 rounded-lg font-bold data-[state=active]:bg-[var(--theme-surface)] data-[state=active]:shadow-sm">Sign in</TabsTrigger>
               <TabsTrigger value="signup" className="flex-1 rounded-lg font-bold data-[state=active]:bg-[var(--theme-surface)] data-[state=active]:shadow-sm">Sign up</TabsTrigger>
             </TabsList>
+
+            {error && (
+              <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/50 text-red-500 text-sm font-medium text-center">
+                {error}
+              </div>
+            )}
 
             <TabsContent value="signin">
               <form onSubmit={(e) => handleSubmit(e, 'signin')} className="space-y-4">
