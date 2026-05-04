@@ -1,5 +1,7 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { mockQuizzes, dashboardStats, currentTeacher, ROOM_CODE } from '../data/mockData';
+import api from '../api/client';
+import { dashboardStats } from '../data/mockData';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -32,8 +34,26 @@ function StatCard({ icon, color, label, value, change }: {
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const [quizzes, setQuizzes] = useState<any[]>([]);
+  
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const teacherName = localStorage.getItem('name') || 'Teacher';
+
+  useEffect(() => {
+    api.get('/api/quizzes').then(res => setQuizzes(res.data)).catch(console.error);
+  }, []);
+
+  const handleHost = async (e: React.MouseEvent, quizId: string) => {
+    e.stopPropagation();
+    try {
+      const { data } = await api.post(`/api/sessions`, { quiz_id: quizId });
+      navigate(`/session/${data.room_code}/lobby`);
+    } catch (err) {
+      console.error('Failed to create session', err);
+      alert('Could not start live session.');
+    }
+  };
 
   return (
     <div className="p-6 lg:p-10 space-y-10 bg-[var(--theme-bg-main)] min-h-screen transition-colors duration-300">
@@ -41,7 +61,7 @@ export default function DashboardPage() {
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div className="space-y-1">
           <h1 className="font-heading text-3xl lg:text-4xl font-bold text-[var(--theme-text-main)] tracking-tight">
-            {greeting}, {currentTeacher.name.split(' ')[0]} 👋
+            {greeting}, {teacherName.split(' ')[0]} 👋
           </h1>
           <p className="text-[var(--theme-text-muted)] text-base font-medium">Ready to inspire your students today?</p>
         </div>
@@ -59,7 +79,7 @@ export default function DashboardPage() {
 
       {/* Stats Section */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
-        <StatCard icon="📚" color="#0019ff" label="Total Quizzes" value={dashboardStats.totalQuizzes} change={dashboardStats.quizChange} />
+        <StatCard icon="📚" color="#0019ff" label="Total Quizzes" value={quizzes.length} change={dashboardStats.quizChange} />
         <StatCard icon="🎯" color="#10B981" label="Sessions Run" value={dashboardStats.sessionsRun} change={dashboardStats.sessionChange} />
         <StatCard icon="👥" color="#F59E0B" label="Students Reached" value={dashboardStats.studentsReached.toLocaleString()} change={dashboardStats.studentChange} />
         <StatCard icon="📊" color="#EF4444" label="Avg Score" value={`${dashboardStats.avgScore}%`} change={dashboardStats.scoreChange} />
@@ -75,7 +95,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {mockQuizzes.map((quiz) => (
+          {quizzes.slice(0, 3).map((quiz) => (
             <Card
               key={quiz.id}
               className="group p-6 hover:translate-y-[-4px] transition-all duration-300 cursor-pointer border-[var(--theme-border)] hover:shadow-2xl hover:border-primary/30 relative overflow-hidden"
@@ -89,10 +109,10 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex flex-col items-end gap-1.5">
                   <Badge variant="periwinkle" className="text-[10px] uppercase tracking-wider font-bold">
-                    {quiz.questionCount} Questions
+                    {quiz.question_count || 0} Questions
                   </Badge>
                   <Badge variant="primary" className="text-[10px] uppercase tracking-wider font-bold">
-                    {quiz.timePerQuestion}s Limit
+                    {quiz.time_per_q || 30}s Limit
                   </Badge>
                 </div>
               </div>
@@ -101,13 +121,13 @@ export default function DashboardPage() {
                 <h3 className="font-heading text-lg font-bold text-[var(--theme-text-main)] group-hover:text-primary transition-colors line-clamp-1">
                   {quiz.title}
                 </h3>
-                <p className="text-xs text-[var(--theme-text-dim)] font-medium">Last active {quiz.lastRun}</p>
+                <p className="text-xs text-[var(--theme-text-dim)] font-medium">Created {new Date(quiz.created_at).toLocaleDateString()}</p>
               </div>
 
               <div className="flex gap-3 pt-4 border-t border-[var(--theme-border)] group-hover:border-primary/10 transition-colors">
                 <Button
                   className="flex-1 rounded-xl h-11"
-                  onClick={(e) => { e.stopPropagation(); navigate(`/session/${ROOM_CODE}/lobby`); }}
+                  onClick={(e) => handleHost(e, quiz.id)}
                 >
                   Host Live
                 </Button>
@@ -121,6 +141,11 @@ export default function DashboardPage() {
               </div>
             </Card>
           ))}
+          {quizzes.length === 0 && (
+            <div className="col-span-full p-8 text-center border-2 border-dashed border-[var(--theme-border)] rounded-2xl">
+              <p className="text-[var(--theme-text-muted)] font-medium">You haven't created any quizzes yet!</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

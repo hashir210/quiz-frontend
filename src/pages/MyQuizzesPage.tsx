@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { mockQuizzes, ROOM_CODE } from '../data/mockData';
+import api from '../api/client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,8 +11,46 @@ export default function MyQuizzesPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'recent' | 'popular'>('all');
+  const [quizzes, setQuizzes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filtered = mockQuizzes.filter((q) =>
+  useEffect(() => {
+    const fetchQuizzes = async () => {
+      try {
+        const { data } = await api.get('/api/quizzes');
+        setQuizzes(data);
+      } catch (err) {
+        console.error('Failed to fetch quizzes', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchQuizzes();
+  }, []);
+
+  const handleHost = async (e: React.MouseEvent, quizId: string) => {
+    e.stopPropagation();
+    try {
+      const { data } = await api.post(`/api/sessions`, { quiz_id: quizId });
+      navigate(`/session/${data.room_code}/lobby`);
+    } catch (err) {
+      console.error('Failed to create session', err);
+      alert('Could not start live session.');
+    }
+  };
+
+  const handleDelete = async (e: React.MouseEvent, quizId: string) => {
+    e.stopPropagation();
+    if (!confirm('Are you sure you want to delete this quiz?')) return;
+    try {
+      await api.delete(`/api/quizzes/${quizId}`);
+      setQuizzes(quizzes.filter(q => q.id !== quizId));
+    } catch (err) {
+      console.error('Failed to delete quiz', err);
+    }
+  };
+
+  const filtered = quizzes.filter((q) =>
     q.title.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -71,23 +109,27 @@ export default function MyQuizzesPage() {
       {/* Stats Bar */}
       <div className="flex gap-6 flex-wrap">
         <div className="flex items-center gap-2">
-          <span className="text-2xl font-bold text-[var(--theme-text-main)]">{mockQuizzes.length}</span>
+          <span className="text-2xl font-bold text-[var(--theme-text-main)]">{quizzes.length}</span>
           <span className="text-sm text-[var(--theme-text-dim)]">Total Quizzes</span>
         </div>
         <div className="w-px h-8 bg-[var(--border-default)]" />
         <div className="flex items-center gap-2">
-          <span className="text-2xl font-bold text-[var(--theme-text-main)]">87</span>
+          <span className="text-2xl font-bold text-[var(--theme-text-main)]">0</span>
           <span className="text-sm text-[var(--theme-text-dim)]">Sessions Run</span>
         </div>
         <div className="w-px h-8 bg-[var(--border-default)]" />
         <div className="flex items-center gap-2">
-          <span className="text-2xl font-bold text-primary">1.2K</span>
+          <span className="text-2xl font-bold text-primary">0</span>
           <span className="text-sm text-[var(--theme-text-dim)]">Students Reached</span>
         </div>
       </div>
 
       {/* Quiz Grid */}
-      {filtered.length === 0 ? (
+      {loading ? (
+        <Card className="p-12 text-center border-[var(--theme-border)]">
+          <p className="font-heading text-lg font-bold text-[var(--theme-text-main)]">Loading your quizzes...</p>
+        </Card>
+      ) : filtered.length === 0 ? (
         <Card className="p-12 text-center border-[var(--theme-border)]">
           <div className="text-4xl mb-4">🔍</div>
           <p className="font-heading text-lg font-bold text-[var(--theme-text-main)]">No quizzes found</p>
@@ -108,10 +150,10 @@ export default function MyQuizzesPage() {
                 </div>
                 <div className="flex flex-col items-end gap-1.5">
                   <Badge variant="periwinkle" className="text-[10px] uppercase tracking-wider font-bold">
-                    {quiz.questionCount} Qs
+                    {quiz.question_count || 0} Qs
                   </Badge>
                   <Badge variant="primary" className="text-[10px] uppercase tracking-wider font-bold">
-                    {quiz.timePerQuestion}s
+                    {quiz.time_per_q || 30}s
                   </Badge>
                 </div>
               </div>
@@ -121,14 +163,14 @@ export default function MyQuizzesPage() {
               </h3>
               <p className="text-xs text-[var(--theme-text-dim)] mb-1">{quiz.description}</p>
               <p className="text-[10px] text-[var(--theme-text-dim)] uppercase tracking-widest font-bold mb-4">
-                Last run {quiz.lastRun}
+                Created {new Date(quiz.created_at).toLocaleDateString()}
               </p>
 
               <div className="flex gap-2 pt-4 border-t border-[var(--theme-border)]">
                 <Button
                   size="sm"
                   className="flex-1 rounded-xl"
-                  onClick={(e) => { e.stopPropagation(); navigate(`/session/${ROOM_CODE}/lobby`); }}
+                  onClick={(e) => handleHost(e, quiz.id)}
                 >
                   Host
                 </Button>
@@ -144,7 +186,7 @@ export default function MyQuizzesPage() {
                   variant="ghost"
                   size="icon"
                   className="rounded-xl text-[var(--text-muted)] hover:text-danger"
-                  onClick={(e) => { e.stopPropagation(); }}
+                  onClick={(e) => handleDelete(e, quiz.id)}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
