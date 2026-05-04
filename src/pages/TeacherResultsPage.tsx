@@ -1,11 +1,11 @@
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Confetti from '../components/Confetti';
-import { mockLeaderboard, mockQuizzes } from '../data/mockData';
+import api from '../api/client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Separator } from '@/components/ui/separator';
 
 const RANK_COLORS: Record<number, { color: string; glow: string }> = {
   1: { color: '#F59E0B', glow: '0 0 32px rgba(245,158,11,0.4)' },
@@ -16,13 +16,28 @@ const RANK_COLORS: Record<number, { color: string; glow: string }> = {
 export default function TeacherResultsPage() {
   const navigate = useNavigate();
   const { roomCode } = useParams();
-  const quiz = mockQuizzes[0];
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.get(`/api/sessions/${roomCode}/results`)
+      .then(res => {
+        setLeaderboard(res.data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
+  }, [roomCode]);
+
+  if (loading) return <div className="h-screen w-screen flex items-center justify-center bg-[var(--bg-primary)] text-white">Loading results...</div>;
 
   const podiumOrder = [
-    mockLeaderboard[1], // 2nd place left
-    mockLeaderboard[0], // 1st place center
-    mockLeaderboard[2], // 3rd place right
-  ];
+    leaderboard[1], // 2nd place left
+    leaderboard[0], // 1st place center
+    leaderboard[2], // 3rd place right
+  ].filter(Boolean);
 
   const podiumHeights = [160, 200, 130];
 
@@ -35,11 +50,8 @@ export default function TeacherResultsPage() {
           <div className="relative z-10 flex flex-col items-center">
             <Badge variant="periwinkle" className="mb-6 px-6 py-1.5 text-sm uppercase tracking-[0.4em] font-black rounded-full">Session Review</Badge>
             <h1 className="font-heading text-5xl font-black text-[var(--text-primary)] text-center tracking-tighter">
-              Quiz Mastermind 🎉
+              Quiz Results 🎉
             </h1>
-            <p className="text-base text-[var(--text-muted)] text-center mt-3 font-medium">
-              {quiz.title} • Live Session Results
-            </p>
           </div>
         </div>
 
@@ -51,12 +63,12 @@ export default function TeacherResultsPage() {
             const isWinner = rank === 1;
 
             return (
-              <div key={entry.student.id} className="flex flex-col items-center group">
+              <div key={i} className="flex flex-col items-center group">
                 <div className={`mb-6 flex flex-col items-center transition-transform duration-500 ${isWinner ? 'scale-110' : 'scale-90 group-hover:scale-95'}`}>
                    {isWinner && <span className="text-4xl mb-2 animate-bounce">👑</span>}
                    <Avatar className="w-20 h-20 border-4 shadow-2xl" style={{ borderColor: rc.color }}>
-                      <AvatarFallback className="text-2xl font-black text-white" style={{ backgroundColor: entry.student.avatarColor }}>
-                        {entry.student.initial}
+                      <AvatarFallback className="text-2xl font-black text-white bg-primary">
+                        {entry.name[0].toUpperCase()}
                       </AvatarFallback>
                    </Avatar>
                 </div>
@@ -73,9 +85,9 @@ export default function TeacherResultsPage() {
                   <span className="font-heading text-3xl font-black mb-1" style={{ color: rc.color }}>
                     #{rank}
                   </span>
-                  <span className="text-base font-bold text-[var(--text-primary)] mt-1 px-4 text-center line-clamp-1">{entry.student.name}</span>
+                  <span className="text-base font-bold text-[var(--text-primary)] mt-1 px-4 text-center line-clamp-1">{entry.name}</span>
                   <div className="mt-4 flex flex-col items-center gap-1">
-                    <span className="font-heading text-2xl font-black text-[var(--text-primary)] tracking-tighter">{entry.score.toLocaleString()}</span>
+                    <span className="font-heading text-2xl font-black text-[var(--text-primary)] tracking-tighter">{entry.total_score.toLocaleString()}</span>
                   </div>
                 </Card>
               </div>
@@ -87,24 +99,22 @@ export default function TeacherResultsPage() {
             <h2 className="font-heading text-2xl font-black text-[var(--text-primary)] tracking-tight ml-2">Final Standings</h2>
             <Card className="overflow-hidden border-[var(--border-default)] shadow-2xl rounded-[32px] bg-[var(--bg-card)]">
               {/* Header */}
-              <div className="grid grid-cols-[60px_1fr_120px_120px_120px] items-center bg-[var(--bg-secondary)] px-8 py-5">
+              <div className="grid grid-cols-[60px_1fr_120px] items-center bg-[var(--bg-secondary)] px-8 py-5">
                 <span className="text-[10px] uppercase font-black text-[var(--text-muted)] tracking-widest">Rank</span>
                 <span className="text-[10px] uppercase font-black text-[var(--text-muted)] tracking-widest">Participant</span>
                 <span className="text-[10px] uppercase font-black text-[var(--text-muted)] tracking-widest text-right">Score</span>
-                <span className="text-[10px] uppercase font-black text-[var(--text-muted)] tracking-widest text-right">Accuracy</span>
-                <span className="text-[10px] uppercase font-black text-[var(--text-muted)] tracking-widest text-right">Speed</span>
               </div>
 
               {/* Rows */}
               <div className="divide-y divide-[var(--border-default)]">
-              {mockLeaderboard.map((entry, i) => {
+              {leaderboard.map((entry, i) => {
                 const rankColor =
                   entry.rank <= 3 ? RANK_COLORS[entry.rank].color : 'var(--text-muted)';
                 
                 return (
                   <div
-                    key={entry.student.id}
-                    className="grid grid-cols-[60px_1fr_120px_120px_120px] items-center px-8 py-5 hover:bg-[var(--bg-secondary)]/50 transition-colors"
+                    key={i}
+                    className="grid grid-cols-[60px_1fr_120px] items-center px-8 py-5 hover:bg-[var(--bg-secondary)]/50 transition-colors"
                   >
                     <span className="font-heading text-lg font-black" style={{ color: rankColor }}>
                         #{entry.rank}
@@ -112,25 +122,15 @@ export default function TeacherResultsPage() {
                     
                     <div className="flex items-center gap-4">
                       <Avatar className="w-10 h-10 border-2 border-[var(--bg-secondary)]">
-                        <AvatarFallback className="text-white font-bold" style={{ backgroundColor: entry.student.avatarColor }}>
-                          {entry.student.initial}
+                        <AvatarFallback className="text-white font-bold bg-primary">
+                          {entry.name[0].toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="text-base font-bold text-[var(--text-primary)]">{entry.student.name}</span>
+                      <span className="text-base font-bold text-[var(--text-primary)]">{entry.name}</span>
                     </div>
 
                     <span className="font-heading text-xl font-black text-primary text-right tracking-tighter">
-                        {entry.score.toLocaleString()}
-                    </span>
-
-                    <div className="text-right">
-                        <Badge variant="success" className="bg-success/10 text-success border-success/10 font-bold px-3 py-0.5 rounded-lg">
-                        {Math.round((entry.correctAnswers / entry.totalQuestions) * 100)}%
-                        </Badge>
-                    </div>
-
-                    <span className="text-sm font-bold text-[var(--text-secondary)] text-right">
-                        {entry.avgSpeed}s <span className="text-[10px] font-medium text-[var(--text-muted)]">avg</span>
+                        {entry.total_score.toLocaleString()}
                     </span>
                   </div>
                 );
@@ -141,14 +141,6 @@ export default function TeacherResultsPage() {
 
         {/* Bottom actions */}
         <div className="flex flex-col sm:flex-row justify-center gap-6 mt-16 pb-16">
-          <Button
-            variant="outline"
-            size="xl"
-            className="w-full sm:w-[260px] h-16 rounded-[20px] border-2 border-[var(--border-default)] font-bold text-lg hover:bg-[var(--bg-secondary)] transition-all"
-            onClick={() => navigate(`/session/${roomCode}/lobby`)}
-          >
-            Restart Session
-          </Button>
           <Button
             size="xl"
             className="w-full sm:w-[260px] h-16 rounded-[20px] font-bold text-lg shadow-xl shadow-primary/20"

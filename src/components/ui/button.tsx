@@ -14,6 +14,8 @@ const buttonVariants = cva(
           "border border-[var(--theme-border)] bg-transparent text-[var(--theme-text-muted)] hover:border-[var(--theme-border-active)] hover:text-[var(--theme-text-main)]",
         ghost:
           "bg-transparent text-[var(--theme-text-muted)] hover:bg-[var(--theme-bg-alt)] hover:text-[var(--theme-text-main)]",
+        secondary:
+          "bg-[var(--theme-bg-alt)] text-[var(--theme-text-main)] border border-[var(--theme-border)] hover:bg-[var(--theme-surface)] hover:border-[var(--theme-border-active)]",
         destructive:
           "border border-danger bg-transparent text-danger hover:bg-danger/10",
         link:

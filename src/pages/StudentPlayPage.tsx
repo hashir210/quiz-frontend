@@ -1,71 +1,92 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { mockQuizzes } from '../data/mockData';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Card } from '@/components/ui/card';
+import { useQuizSocket } from '../hooks/useQuizSocket';
 
 const OPTION_COLORS = ['#6366F1', '#06B6D4', '#F59E0B', '#F43F5E'];
 const OPTION_LETTERS = ['A', 'B', 'C', 'D'];
 
-type StudentPhase = 'answering' | 'locked' | 'reveal';
+type StudentPhase = 'waiting' | 'answering' | 'locked' | 'reveal' | 'ended';
 
 export default function StudentPlayPage() {
   const navigate = useNavigate();
   const { roomCode } = useParams();
-  const quiz = mockQuizzes[0];
-  const question = quiz.questions[0] || {
-    id: 'demo',
-    text: 'Which ancient civilization built the Pyramid of Giza?',
-    options: [
-      { id: 'a', text: 'Roman Empire' },
-      { id: 'b', text: 'Ancient Egypt' },
-      { id: 'c', text: 'Greek Empire' },
-      { id: 'd', text: 'Persian Empire' },
-    ],
-    correctOptionIndex: 1,
-  };
+  const location = useLocation();
+  const code = roomCode || '';
+  const playerName = location.state?.playerName || 'Anonymous';
 
-  const [phase, setPhase] = useState<StudentPhase>('answering');
+  const [phase, setPhase] = useState<StudentPhase>('waiting');
+  const [question, setQuestion] = useState<any>(null);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(30);
-  const totalQuestions = 10;
-  const currentQ = 3;
+  const [timeLimit, setTimeLimit] = useState(30);
+  const [scoreData, setScoreData] = useState<any>(null);
+
+  const { sendJsonMessage, isConnected } = useQuizSocket(code, (data) => {
+    if (data.event === 'question_show') {
+      setQuestion(data);
+      setPhase('answering');
+      setSelectedOption(null);
+      setTimeLimit(data.time_limit || 30);
+      setSecondsLeft(data.time_limit || 30);
+      setScoreData(null);
+    } else if (data.event === 'answer_result') {
+      setScoreData(data);
+      setPhase('reveal');
+    } else if (data.event === 'quiz_ended') {
+      setPhase('ended');
+      navigate(`/play/${code}/end`, { state: { leaderboard: data.leaderboard, playerName } });
+    }
+  });
+
+  useEffect(() => {
+    if (isConnected && phase === 'waiting') {
+      sendJsonMessage({ event: 'student_join', name: playerName, role: 'student' });
+    }
+  }, [isConnected, sendJsonMessage, playerName, phase]);
 
   // Timer
   useEffect(() => {
     if (secondsLeft <= 0 || phase !== 'answering') return;
     const timer = setInterval(() => {
-      setSecondsLeft((prev) => Math.max(0, prev - 1));
+      setSecondsLeft((prev) => {
+        if (prev <= 1) {
+          if (phase === 'answering') setPhase('locked');
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
     return () => clearInterval(timer);
   }, [secondsLeft, phase]);
-
-  // Auto-reveal simulation
-  useEffect(() => {
-    if (phase === 'locked') {
-      const timer = setTimeout(() => setPhase('reveal'), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [phase]);
 
   const handleAnswer = (index: number) => {
     if (phase !== 'answering') return;
     setSelectedOption(index);
     setPhase('locked');
+    sendJsonMessage({ event: 'student_answer', option: index });
   };
 
+  if (phase === 'waiting') {
+    return (
+      <div className="h-screen w-screen bg-navy-900 flex items-center justify-center">
+        <h2 className="text-white text-xl font-bold animate-pulse">Waiting for teacher to start...</h2>
+      </div>
+    );
+  }
+
   const timerColor = secondsLeft > 10 ? '#6366F1' : secondsLeft > 5 ? '#F59E0B' : '#EF4444';
-  const timerValue = (secondsLeft / 30) * 100;
-  const isCorrect = selectedOption === question.correctOptionIndex;
+  const timerValue = (secondsLeft / timeLimit) * 100;
+  const isCorrect = scoreData?.correct;
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-navy-900 flex flex-col relative">
-      {/* Top Zone — 20vh */}
       <div className="h-[20vh] flex flex-col justify-center px-4 pt-4">
         <div className="flex items-center justify-between mb-2">
           <span className="font-mono text-xs text-slate-500">
-            Q{currentQ} / {totalQuestions}
+            Q{question?.index + 1} / {question?.total}
           </span>
           <span className="font-mono text-xs font-bold" style={{ color: timerColor }}>
             {secondsLeft}s
@@ -78,18 +99,16 @@ export default function StudentPlayPage() {
         />
       </div>
 
-      {/* Middle Zone — 35vh */}
       <div className="h-[35vh] flex flex-col items-center justify-center px-4">
         <h2 className="font-heading text-lg font-semibold text-white text-center leading-snug px-2">
-          {question.text}
+          {question?.text}
         </h2>
       </div>
 
-      {/* Bottom Zone — 45vh */}
       <div className="h-[45vh] grid grid-cols-2 gap-3 px-4 pb-6 content-start">
-        {question.options.map((opt, i) => {
+        {question?.options.map((opt: string, i: number) => {
           const isSelected = selectedOption === i;
-          const isCorrectOption = i === question.correctOptionIndex;
+          const isCorrectOption = scoreData?.correct_option === i;
           const isLocked = phase === 'locked' || phase === 'reveal';
 
           let bg = `${OPTION_COLORS[i]}40`;
@@ -119,7 +138,7 @@ export default function StudentPlayPage() {
 
           return (
             <button
-              key={opt.id}
+              key={i}
               onClick={() => handleAnswer(i)}
               disabled={isLocked}
               className="min-h-[80px] rounded-xl flex flex-col items-center justify-center gap-1 transition-all duration-200 active:scale-[0.97] relative border-2"
@@ -137,38 +156,35 @@ export default function StudentPlayPage() {
                 {icon || OPTION_LETTERS[i]}
               </span>
               <span className="text-xs font-medium text-white text-center px-2 leading-snug">
-                {opt.text}
+                {opt}
               </span>
             </button>
           );
         })}
       </div>
 
-      {/* Locked toast */}
       {phase === 'locked' && (
         <Card className="absolute bottom-8 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl animate-chip-appear p-0 border-indigo/20 flex items-center justify-center">
           <span className="text-sm text-white px-6 py-3">Answer locked in! ⏳</span>
         </Card>
       )}
 
-      {/* Score popup */}
       {phase === 'reveal' && isCorrect && (
         <Card className="absolute bottom-8 left-1/2 -translate-x-1/2 px-8 py-4 rounded-xl border-warning animate-score-popup flex flex-col items-center justify-center p-0">
           <div className="px-8 py-4 flex flex-col items-center">
-            <span className="font-mono text-3xl font-bold gradient-text">+850 pts</span>
-            <span className="text-sm text-slate-300 mt-1">Great speed! 🔥</span>
+            <span className="font-mono text-3xl font-bold gradient-text">+{scoreData.points_earned} pts</span>
+            <span className="text-sm text-slate-300 mt-1">Great job! 🔥</span>
           </div>
         </Card>
       )}
 
-      {/* Navigation Buttons for Manual Testing */}
-      <div className="absolute top-4 right-4 flex gap-2">
-        {phase === 'reveal' && (
-          <Button variant="outline" size="sm" onClick={() => navigate(`/play/${roomCode}/end`)}>
-            Results →
-          </Button>
-        )}
-      </div>
+      {phase === 'reveal' && !isCorrect && selectedOption !== null && (
+        <Card className="absolute bottom-8 left-1/2 -translate-x-1/2 px-8 py-4 rounded-xl border-danger animate-chip-appear flex flex-col items-center justify-center p-0 bg-danger/20">
+          <div className="px-8 py-4 flex flex-col items-center">
+            <span className="font-mono text-xl font-bold text-white">Incorrect 😢</span>
+          </div>
+        </Card>
+      )}
     </div>
   );
 }

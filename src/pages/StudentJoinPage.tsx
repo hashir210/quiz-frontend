@@ -78,9 +78,10 @@ export default function StudentJoinPage() {
         <Button
           type="submit"
           size="xl"
+          disabled={loading}
           className="w-full mt-4 rounded-xl"
         >
-          Join Quiz →
+          {loading ? 'Joining...' : 'Join Quiz →'}
         </Button>
       </form>
       </div>

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import api from '../api/client';
 import Logo from '../components/Logo';
 import { Button } from '@/components/ui/button';
@@ -15,28 +15,57 @@ const OPTION_COLORS = ['#6366F1', '#06B6D4', '#F59E0B', '#F43F5E'];
 const OPTION_LETTERS = ['A', 'B', 'C', 'D'];
 
 interface QuestionForm {
-  id: string;
+  id?: string;
   text: string;
   options: string[];
   correctIndex: number;
+  image_url?: string;
 }
 
 export default function QuizEditorPage() {
   const navigate = useNavigate();
+  const { id } = useParams();
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(!!id);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [timePerQuestion, setTimePerQuestion] = useState('30');
-  const [pointsPerQuestion, setPointsPerQuestion] = useState('1000');
+  const [timePerQuestion, setTimePerQuestion] = useState(() => localStorage.getItem('defaultTimer') || '30');
+  const [pointsPerQuestion, setPointsPerQuestion] = useState(() => localStorage.getItem('defaultPoints') || '1000');
   const [questions, setQuestions] = useState<QuestionForm[]>([
-    { id: '1', text: '', options: ['', '', '', ''], correctIndex: 0 },
+    { text: '', options: ['', '', '', ''], correctIndex: 0 },
   ]);
+
+  useEffect(() => {
+    if (id) {
+      api.get(`/api/quizzes/${id}`)
+        .then(res => {
+          const quiz = res.data;
+          setTitle(quiz.title);
+          setDescription(quiz.description || '');
+          setTimePerQuestion(String(quiz.time_per_q));
+          setPointsPerQuestion(String(quiz.max_points));
+          if (quiz.questions && quiz.questions.length > 0) {
+            setQuestions(quiz.questions.map((q: any) => ({
+              id: q.id,
+              text: q.text,
+              options: q.options,
+              correctIndex: q.correct_option,
+              image_url: q.image_url
+            })));
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          alert("Failed to load quiz");
+        })
+        .finally(() => setFetching(false));
+    }
+  }, [id]);
 
   const addQuestion = () => {
     setQuestions([
       ...questions,
       {
-        id: String(questions.length + 1),
         text: '',
         options: ['', '', '', ''],
         correctIndex: 0,
@@ -68,6 +97,20 @@ export default function QuizEditorPage() {
     setQuestions(updated);
   };
 
+  const handleImageUpload = async (index: number, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await api.post('/api/quizzes/upload-image', formData);
+      const updated = [...questions];
+      updated[index].image_url = res.data.url;
+      setQuestions(updated);
+    } catch (err) {
+      console.error(err);
+      alert("Image upload failed");
+    }
+  };
+
   const handlePublish = async () => {
     if (!title.trim()) return alert("Quiz title is required");
     for (const [i, q] of questions.entries()) {
@@ -77,20 +120,39 @@ export default function QuizEditorPage() {
 
     setLoading(true);
     try {
-      const { data: quiz } = await api.post('/api/quizzes', {
-        title,
-        description,
-        time_per_q: parseInt(timePerQuestion),
-        max_points: parseInt(pointsPerQuestion)
-      });
+      let quizId = id;
+      if (id) {
+        // Update existing quiz metadata
+        await api.put(`/api/quizzes/${id}`, {
+          title,
+          description,
+          time_per_q: parseInt(timePerQuestion),
+          max_points: parseInt(pointsPerQuestion)
+        });
+        
+        // Clear old questions before re-adding
+        await api.delete(`/api/quizzes/${id}/questions`);
+        quizId = id;
+      } else {
+        const { data: quiz } = await api.post('/api/quizzes', {
+          title,
+          description,
+          time_per_q: parseInt(timePerQuestion),
+          max_points: parseInt(pointsPerQuestion)
+        });
+        quizId = quiz.id;
+      }
 
+      // Add questions (Note: This currently duplicates if editing)
+      // TODO: Implement proper question update/delete in backend
       await Promise.all(
         questions.map((q, index) => 
-          api.post(`/api/quizzes/${quiz.id}/questions`, {
+          api.post(`/api/quizzes/${quizId}/questions`, {
             text: q.text,
             options: q.options,
             correct_option: q.correctIndex,
-            order_index: index
+            order_index: index,
+            image_url: q.image_url
           })
         )
       );
@@ -103,9 +165,10 @@ export default function QuizEditorPage() {
     }
   };
 
+  if (fetching) return <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center text-white">Loading quiz...</div>;
+
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] transition-colors duration-300">
-      {/* Sticky Header */}
       <div className="sticky top-0 z-50 bg-[var(--bg-primary)]/80 backdrop-blur-md border-b border-[var(--border-default)]">
         <div className="max-w-[800px] mx-auto flex items-center justify-between h-16 px-6">
           <div className="flex items-center gap-6">
@@ -116,21 +179,19 @@ export default function QuizEditorPage() {
             <nav className="flex items-center gap-2 text-sm font-bold">
               <span className="text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer" onClick={() => navigate('/dashboard')}>Library</span>
               <span className="text-[var(--text-muted)]">/</span>
-              <span className="text-[var(--text-primary)]">New Quiz</span>
+              <span className="text-[var(--text-primary)]">{id ? 'Edit Quiz' : 'New Quiz'}</span>
             </nav>
           </div>
 
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" className="font-bold text-[var(--text-secondary)]">Save Draft</Button>
             <Button onClick={handlePublish} disabled={loading} size="sm" className="bg-primary shadow-lg shadow-primary/20 px-6 font-bold">
-              {loading ? "Publishing..." : "Publish"}
+              {loading ? "Saving..." : (id ? "Save Changes" : "Publish")}
             </Button>
           </div>
         </div>
       </div>
 
       <div className="max-w-[760px] mx-auto px-4 py-8">
-        {/* Quiz Settings Card */}
         <Card className="p-8 mb-8 border-[var(--border-default)] shadow-2xl rounded-3xl bg-[var(--bg-card)]">
           <Input
             value={title}
@@ -182,7 +243,6 @@ export default function QuizEditorPage() {
           </div>
         </Card>
 
-        {/* Questions Section */}
         <div className="flex items-center justify-between mb-6 px-2">
           <div className="flex items-center gap-3">
             <h2 className="font-heading text-xl font-black text-[var(--text-primary)] tracking-tight">Questions</h2>
@@ -192,13 +252,11 @@ export default function QuizEditorPage() {
           </div>
         </div>
 
-        {/* Question Cards */}
         <div className="space-y-6">
         {questions.map((q, qi) => (
-          <Card key={q.id} className="p-8 border-[var(--border-default)] shadow-xl rounded-3xl bg-[var(--bg-card)] group relative overflow-hidden">
+          <Card key={qi} className="p-8 border-[var(--border-default)] shadow-xl rounded-3xl bg-[var(--bg-card)] group relative overflow-hidden">
             <div className="absolute top-0 left-0 w-1.5 h-full bg-primary/20 group-hover:bg-primary transition-colors" />
             
-            {/* Top row */}
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-black text-lg">
@@ -218,7 +276,6 @@ export default function QuizEditorPage() {
               </Button>
             </div>
 
-            {/* Question text */}
             <div className="space-y-2 mb-8">
                 <Label className="text-[10px] uppercase font-black text-[var(--text-muted)] tracking-widest ml-1">Question Text</Label>
                 <Input
@@ -228,18 +285,37 @@ export default function QuizEditorPage() {
                 className="h-16 text-lg font-bold rounded-2xl bg-[var(--bg-secondary)] border-[var(--border-default)] px-6"
                 />
             </div>
-
-            {/* Image upload zone (simplified) */}
-            <div className="border-2 border-dashed border-[var(--border-default)] rounded-2xl h-[100px] flex flex-col items-center justify-center mb-8 hover:border-primary/40 hover:bg-primary/[0.02] transition-all cursor-pointer group/upload">
-              <div className="w-10 h-10 rounded-full bg-[var(--bg-secondary)] flex items-center justify-center mb-2 group-hover/upload:scale-110 transition-transform">
-                <svg className="text-[var(--text-muted)]" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" />
-                </svg>
-              </div>
-              <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Add Media (Optional)</span>
+            {/* Image upload zone */}
+            <div className="mb-8">
+              {q.image_url ? (
+                <div className="relative group/img rounded-2xl overflow-hidden border-2 border-[var(--border-default)]">
+                  <img src={q.image_url} alt="Question" className="w-full h-48 object-cover" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                    <Button variant="secondary" size="sm" onClick={() => {
+                      const updated = [...questions];
+                      updated[qi].image_url = undefined;
+                      setQuestions(updated);
+                    }}>Remove</Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="border-2 border-dashed border-[var(--border-default)] rounded-2xl h-[120px] flex flex-col items-center justify-center hover:border-primary/40 hover:bg-primary/[0.02] transition-all cursor-pointer relative group/upload">
+                  <input
+                    type="file"
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                    accept="image/*"
+                    onChange={(e) => e.target.files?.[0] && handleImageUpload(qi, e.target.files[0])}
+                  />
+                  <div className="w-10 h-10 rounded-full bg-[var(--bg-secondary)] flex items-center justify-center mb-2 group-hover/upload:scale-110 transition-transform">
+                    <svg className="text-[var(--text-muted)]" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" />
+                    </svg>
+                  </div>
+                  <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Add Media (Optional)</span>
+                </div>
+              )}
             </div>
 
-            {/* Answer options */}
             <div className="space-y-4">
                 <Label className="text-[10px] uppercase font-black text-[var(--text-muted)] tracking-widest ml-1">Answer Options</Label>
                 <RadioGroup value={String(q.correctIndex)} onValueChange={(val) => setCorrectAnswer(qi, parseInt(val))}>
@@ -285,7 +361,6 @@ export default function QuizEditorPage() {
         ))}
         </div>
 
-        {/* Add question */}
         <Button
           onClick={addQuestion}
           variant="outline"

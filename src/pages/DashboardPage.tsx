@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
-import { dashboardStats } from '../data/mockData';
+
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -40,6 +40,17 @@ export default function DashboardPage() {
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
   const teacherName = localStorage.getItem('name') || 'Teacher';
 
+  const dashboardStats = {
+    totalQuizzes: quizzes.length,
+    quizChange: 0,
+    sessionsRun: 0,
+    sessionChange: 0,
+    studentsReached: 0,
+    studentChange: 0,
+    avgScore: 0,
+    scoreChange: 0,
+  };
+
   useEffect(() => {
     api.get('/api/quizzes').then(res => setQuizzes(res.data)).catch(console.error);
   }, []);
@@ -47,7 +58,7 @@ export default function DashboardPage() {
   const handleHost = async (e: React.MouseEvent, quizId: string) => {
     e.stopPropagation();
     try {
-      const { data } = await api.post(`/api/sessions`, { quiz_id: quizId });
+      const { data } = await api.post(`/api/sessions/start`, { quiz_id: quizId });
       navigate(`/session/${data.room_code}/lobby`);
     } catch (err) {
       console.error('Failed to create session', err);
@@ -79,7 +90,7 @@ export default function DashboardPage() {
 
       {/* Stats Section */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
-        <StatCard icon="📚" color="#0019ff" label="Total Quizzes" value={quizzes.length} change={dashboardStats.quizChange} />
+        <StatCard icon="📚" color="#0019ff" label="Total Quizzes" value={dashboardStats.totalQuizzes} change={dashboardStats.quizChange} />
         <StatCard icon="🎯" color="#10B981" label="Sessions Run" value={dashboardStats.sessionsRun} change={dashboardStats.sessionChange} />
         <StatCard icon="👥" color="#F59E0B" label="Students Reached" value={dashboardStats.studentsReached.toLocaleString()} change={dashboardStats.studentChange} />
         <StatCard icon="📊" color="#EF4444" label="Avg Score" value={`${dashboardStats.avgScore}%`} change={dashboardStats.scoreChange} />
@@ -89,7 +100,7 @@ export default function DashboardPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between border-b border-[var(--theme-border)] pb-4">
           <h2 className="font-heading text-xl font-semibold text-[var(--theme-text-main)]">My Library</h2>
-          <Button variant="link" className="text-primary font-semibold hover:no-underline flex items-center gap-1">
+          <Button variant="link" onClick={() => navigate('/quizzes')} className="text-primary font-semibold hover:no-underline flex items-center gap-1">
             View All <span className="text-lg">→</span>
           </Button>
         </div>
@@ -98,6 +109,7 @@ export default function DashboardPage() {
           {quizzes.slice(0, 3).map((quiz) => (
             <Card
               key={quiz.id}
+              onClick={() => navigate(`/quiz/${quiz.id}/edit`)}
               className="group p-6 hover:translate-y-[-4px] transition-all duration-300 cursor-pointer border-[var(--theme-border)] hover:shadow-2xl hover:border-primary/30 relative overflow-hidden"
             >
               {/* Card Accent */}

@@ -31,7 +31,7 @@ export default function MyQuizzesPage() {
   const handleHost = async (e: React.MouseEvent, quizId: string) => {
     e.stopPropagation();
     try {
-      const { data } = await api.post(`/api/sessions`, { quiz_id: quizId });
+      const { data } = await api.post(`/api/sessions/start`, { quiz_id: quizId });
       navigate(`/session/${data.room_code}/lobby`);
     } catch (err) {
       console.error('Failed to create session', err);
@@ -50,9 +50,17 @@ export default function MyQuizzesPage() {
     }
   };
 
-  const filtered = quizzes.filter((q) =>
-    q.title.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = quizzes
+    .filter((q) => q.title.toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => {
+      if (filter === 'recent') {
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
+      if (filter === 'popular') {
+        return (b.question_count || 0) - (a.question_count || 0);
+      }
+      return 0;
+    });
 
   return (
     <div className="p-6 lg:p-10 space-y-8 bg-[var(--theme-bg-main)] min-h-screen transition-colors duration-300">
@@ -140,6 +148,7 @@ export default function MyQuizzesPage() {
           {filtered.map((quiz) => (
             <Card
               key={quiz.id}
+              onClick={() => navigate(`/quiz/${quiz.id}/edit`)}
               className="group p-6 hover:translate-y-[-4px] transition-all duration-300 cursor-pointer border-[var(--theme-border)] hover:shadow-2xl hover:border-primary/30 relative overflow-hidden"
             >
               <div className="absolute top-0 left-0 w-full h-1 bg-primary opacity-0 group-hover:opacity-100 transition-opacity" />

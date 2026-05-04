@@ -1,10 +1,14 @@
+import { useLocation } from 'react-router-dom';
 import Confetti from '../components/Confetti';
 import { Card } from '@/components/ui/card';
 
 export default function StudentEndPage() {
-  const rank = 2;
-  const studentName = 'Ryan Chen';
-  const totalScore = 8650;
+  const location = useLocation();
+  const { leaderboard, playerName } = location.state || { leaderboard: [], playerName: 'Anonymous' };
+
+  const myEntry = (leaderboard as any[]).find((e: any) => e.name === playerName);
+  const rank = myEntry ? myEntry.rank : (leaderboard.length + 1);
+  const totalScore = myEntry ? myEntry.score : 0;
 
   const rankColor =
     (rank as number) === 1 ? '#F59E0B' :
@@ -22,7 +26,7 @@ export default function StudentEndPage() {
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-[var(--bg-primary)] flex flex-col items-center justify-center px-6 relative transition-colors duration-300">
-      <Confetti count={50} />
+      {rank <= 3 && <Confetti count={50} />}
 
       <div className="relative z-10 flex flex-col items-center">
         {/* Rank display */}
@@ -35,7 +39,7 @@ export default function StudentEndPage() {
 
         {/* Student name */}
         <h2 className="font-heading text-xl font-semibold text-[var(--text-primary)] mt-2">
-          {studentName}
+          {playerName}
         </h2>
 
         {/* Score */}
@@ -44,34 +48,19 @@ export default function StudentEndPage() {
           <span className="text-sm text-[var(--text-secondary)] ml-2">points</span>
         </div>
 
-        {/* Stats grid */}
-        <div className="grid grid-cols-3 gap-3 mt-6 w-full max-w-[340px]">
-          {[
-            { value: '8/10', label: 'Correct' },
-            { value: '4.2s', label: 'Avg speed' },
-            { value: '950', label: 'Best answer' },
-          ].map((stat) => (
-            <Card key={stat.label} className="flex flex-col items-center py-3 px-2 border-[var(--border-default)]">
-              <span className="font-heading text-xl font-bold text-[var(--text-primary)]">{stat.value}</span>
-              <span className="text-[11px] text-[var(--text-muted)] mt-0.5">{stat.label}</span>
-            </Card>
-          ))}
-        </div>
-
         {/* Motivational message */}
         <p className="font-heading text-base font-semibold text-primary mt-4">
           {motivational}
         </p>
 
-        {/* Waiting state */}
+        {/* Final message */}
         <div className="mt-8 flex flex-col items-center">
-          <span className="text-sm text-[var(--text-muted)] mb-2">Waiting for next quiz...</span>
+          <span className="text-sm text-[var(--text-muted)] mb-2">Quiz Finished!</span>
           <div className="flex gap-1.5">
             {[0, 1, 2].map((i) => (
               <div
                 key={i}
-                className="w-2 h-2 rounded-full bg-primary animate-dot-pulse"
-                style={{ animationDelay: `${i * 0.2}s` }}
+                className="w-2 h-2 rounded-full bg-primary"
               />
             ))}
           </div>

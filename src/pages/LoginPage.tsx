@@ -86,6 +86,14 @@ export default function LoginPage() {
     }
   };
 
+  const handleForgotPassword = () => {
+    setError('Password reset is not configured yet. Ask an admin to reset your password from the backend.');
+  };
+
+  const handleGoogleSignIn = () => {
+    setError('Google sign-in is not configured for this project yet. Use email and password for now.');
+  };
+
   return (
     <div className="min-h-screen bg-[var(--theme-bg-main)] flex flex-col lg:flex-row transition-colors duration-300 overflow-hidden relative">
       <AnimatedBlobs />
@@ -196,7 +204,7 @@ export default function LoginPage() {
                 </div>
 
                 <div className="text-right">
-                  <Button variant="link" className="text-sm p-0 h-auto text-primary font-semibold">Forgot password?</Button>
+                  <Button type="button" variant="link" onClick={handleForgotPassword} className="text-sm p-0 h-auto text-primary font-semibold">Forgot password?</Button>
                 </div>
 
                 <Button type="submit" size="xl" className="w-full h-14 rounded-xl shadow-lg shadow-primary/20">Sign In</Button>
@@ -239,7 +247,7 @@ export default function LoginPage() {
           </div>
 
           {/* Google */}
-          <Button variant="outline" size="xl" className="w-full h-14 rounded-xl border-[var(--theme-border)] hover:bg-[var(--theme-bg-alt)] transition-all">
+          <Button type="button" variant="outline" size="xl" onClick={handleGoogleSignIn} className="w-full h-14 rounded-xl border-[var(--theme-border)] hover:bg-[var(--theme-bg-alt)] transition-all">
             <svg width="20" height="20" viewBox="0 0 24 24" className="mr-3">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
               <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />

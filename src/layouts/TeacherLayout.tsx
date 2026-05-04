@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import Logo from '../components/Logo';
-import { currentTeacher } from '../data/mockData';
+
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
@@ -53,7 +53,9 @@ export default function TeacherLayout({ children }: TeacherLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [theme, setTheme] = useState<'dark' | 'light'>(() =>
+    (localStorage.getItem('theme') as 'dark' | 'light' | null) || 'dark'
+  );
 
   useEffect(() => {
     if (theme === 'light') {
@@ -61,9 +63,13 @@ export default function TeacherLayout({ children }: TeacherLayoutProps) {
     } else {
       document.documentElement.classList.remove('light');
     }
+    localStorage.setItem('theme', theme);
   }, [theme]);
 
   const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+
+  const teacherName = localStorage.getItem('name') || 'Teacher';
+  const avatarUrl = localStorage.getItem('avatar');
 
   return (
     <div className="flex h-screen overflow-hidden bg-[var(--theme-bg-main)] transition-colors duration-300">
@@ -138,22 +144,30 @@ export default function TeacherLayout({ children }: TeacherLayoutProps) {
             )}
           </Button>
 
-          <div className="flex items-center gap-3">
-            <Avatar className="w-9 h-9">
-              <AvatarFallback style={{ backgroundColor: currentTeacher.avatarColor }}>
-                {currentTeacher.initial}
-              </AvatarFallback>
+          <div className="flex items-center gap-4 bg-[var(--theme-bg-main)] p-4 rounded-2xl border border-[var(--theme-border)] cursor-pointer hover:border-primary/50 transition-colors group">
+            <Avatar className="w-12 h-12 rounded-xl border-2 border-[var(--theme-border)]">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={teacherName} className="w-full h-full object-cover rounded-xl" />
+              ) : (
+                <AvatarFallback className="rounded-xl font-bold bg-primary text-white">
+                  {teacherName[0].toUpperCase()}
+                </AvatarFallback>
+              )}
             </Avatar>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-[var(--theme-text-main)] truncate">{currentTeacher.name}</p>
-              <p className="text-xs text-[var(--theme-text-muted)]">{currentTeacher.role}</p>
+            <div className="flex-1 overflow-hidden">
+              <p className="text-sm font-bold text-[var(--theme-text-main)] truncate group-hover:text-primary transition-colors">
+                {teacherName}
+              </p>
+              <p className="text-[10px] text-[var(--theme-text-dim)] uppercase tracking-widest font-bold mt-0.5">
+                Pro Plan
+              </p>
             </div>
           </div>
           <Button
             variant="ghost"
             size="sm"
-            className="w-full mt-3 h-8 border border-[var(--theme-border)]"
-            onClick={() => navigate('/login')}
+            className="w-full mt-3 h-8 border border-[var(--theme-border)] text-danger hover:text-danger hover:bg-danger/10"
+            onClick={() => { localStorage.clear(); navigate('/login'); }}
           >
             Logout
           </Button>
