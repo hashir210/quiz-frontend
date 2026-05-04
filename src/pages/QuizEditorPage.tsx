@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '../api/client';
 import Logo from '../components/Logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +23,7 @@ interface QuestionForm {
 
 export default function QuizEditorPage() {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [timePerQuestion, setTimePerQuestion] = useState('30');
@@ -66,6 +68,41 @@ export default function QuizEditorPage() {
     setQuestions(updated);
   };
 
+  const handlePublish = async () => {
+    if (!title.trim()) return alert("Quiz title is required");
+    for (const [i, q] of questions.entries()) {
+      if (!q.text.trim()) return alert(`Question ${i + 1} text is required`);
+      if (q.options.some(o => !o.trim())) return alert(`Question ${i + 1} is missing option text`);
+    }
+
+    setLoading(true);
+    try {
+      const { data: quiz } = await api.post('/api/quizzes', {
+        title,
+        description,
+        time_per_q: parseInt(timePerQuestion),
+        max_points: parseInt(pointsPerQuestion)
+      });
+
+      await Promise.all(
+        questions.map((q, index) => 
+          api.post(`/api/quizzes/${quiz.id}/questions`, {
+            text: q.text,
+            options: q.options,
+            correct_option: q.correctIndex,
+            order_index: index
+          })
+        )
+      );
+      navigate('/dashboard');
+    } catch (err) {
+      console.error(err);
+      alert("Failed to publish quiz");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] transition-colors duration-300">
       {/* Sticky Header */}
@@ -85,7 +122,9 @@ export default function QuizEditorPage() {
 
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" className="font-bold text-[var(--text-secondary)]">Save Draft</Button>
-            <Button size="sm" className="bg-primary shadow-lg shadow-primary/20 px-6 font-bold">Publish</Button>
+            <Button onClick={handlePublish} disabled={loading} size="sm" className="bg-primary shadow-lg shadow-primary/20 px-6 font-bold">
+              {loading ? "Publishing..." : "Publish"}
+            </Button>
           </div>
         </div>
       </div>
