@@ -180,6 +180,7 @@ export default function TeacherLayout({ children }: TeacherLayoutProps) {
         <div className="lg:hidden sticky top-0 z-30 h-14 bg-[var(--theme-bg-main)] border-b border-[var(--theme-border)] flex items-center px-4">
           <button
             onClick={() => setSidebarOpen(true)}
+            aria-label="Open navigation menu"
             className="text-[var(--theme-text-main)] p-1"
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

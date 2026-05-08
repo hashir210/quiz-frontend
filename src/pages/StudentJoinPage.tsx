@@ -28,6 +28,7 @@ export default function StudentJoinPage() {
       
       // We pass the name via state to the next page where the websocket will actually connect
       setError('');
+      localStorage.setItem(`playerName:${roomCode}`, name);
       navigate(`/play/${roomCode}/game`, { state: { playerName: name } });
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Invalid room code or quiz ended');
@@ -61,7 +62,9 @@ export default function StudentJoinPage() {
       {/* Form */}
       <form onSubmit={handleJoin} className="w-full">
         <div className="space-y-2 text-center">
+          <label className="sr-only" htmlFor="student-name">Your name</label>
           <Input
+            id="student-name"
             type="text"
             value={name}
             onChange={(e) => { setName(e.target.value); setError(''); }}

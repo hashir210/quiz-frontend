@@ -112,7 +112,7 @@ export default function LoginPage() {
         <div className="relative z-10 max-w-xl text-center lg:text-left">
           <h1 className="font-heading text-4xl lg:text-[52px] font-extrabold text-[var(--theme-text-main)] leading-tight">
             Run quizzes your students will actually{' '}
-            <span className="gradient-text">remember</span>
+            <span className="text-primary font-black">remember</span>
           </h1>
           <p className="mt-5 text-base lg:text-lg text-[var(--theme-text-muted)] leading-relaxed max-w-lg mx-auto lg:mx-0">
             Create, host, and run live quizzes in minutes. Students join instantly — no app download needed.
@@ -160,10 +160,12 @@ export default function LoginPage() {
             <TabsContent value="signin">
               <form onSubmit={(e) => handleSubmit(e, 'signin')} className="space-y-4">
                 <div className="relative">
+                  <label className="sr-only" htmlFor="signin-email">Email</label>
                   <svg className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--theme-text-dim)]" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
                   </svg>
                   <Input
+                    id="signin-email"
                     type="email"
                     placeholder="Email address"
                     value={email}
@@ -172,10 +174,12 @@ export default function LoginPage() {
                   />
                 </div>
                 <div className="relative">
+                  <label className="sr-only" htmlFor="signin-password">Password</label>
                   <svg className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--theme-text-dim)]" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
                   </svg>
                   <Input
+                    id="signin-password"
                     type={showPassword ? 'text' : 'password'}
                     placeholder="Password"
                     value={password}
@@ -185,6 +189,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--theme-text-dim)] hover:text-[var(--theme-text-main)] transition-colors"
                   >
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -213,21 +218,27 @@ export default function LoginPage() {
 
             <TabsContent value="signup">
               <form onSubmit={(e) => handleSubmit(e, 'signup')} className="space-y-4">
+                <label className="sr-only" htmlFor="signup-name">Full name</label>
                 <Input
+                  id="signup-name"
                   type="text"
                   placeholder="Full name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="h-14 px-4 rounded-xl text-base"
                 />
+                <label className="sr-only" htmlFor="signup-email">Email</label>
                 <Input
+                  id="signup-email"
                   type="email"
                   placeholder="Email address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="h-14 px-4 rounded-xl text-base"
                 />
+                <label className="sr-only" htmlFor="signup-password">Password</label>
                 <Input
+                  id="signup-password"
                   type="password"
                   placeholder="Password"
                   value={password}

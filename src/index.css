@@ -61,6 +61,25 @@
   --glow-accent: 0 4px 12px rgba(0, 25, 255, 0.15);
 }
 
+/* ----------------------------------------------------------------------------
+   Theme token aliases (legacy -> theme)
+---------------------------------------------------------------------------- */
+:root {
+  --bg-primary: var(--theme-bg-main);
+  --bg-secondary: var(--theme-bg-alt);
+  --bg-card: var(--theme-surface);
+
+  --text-primary: var(--theme-text-main);
+  --text-secondary: var(--theme-text-muted);
+  --text-muted: var(--theme-text-dim);
+
+  --border-default: var(--theme-border);
+  --border-accent: var(--theme-border-active);
+
+  --accent-primary: var(--theme-accent-main);
+  --accent-primary-hover: var(--theme-accent-hover);
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -76,6 +95,21 @@ body {
 }
 
 /* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--theme-bg-main);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--theme-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--theme-text-dim);
+}
+
+/* Correct scrollbar selectors */
 ::-webkit-scrollbar {
   width: 6px;
 }
@@ -155,9 +189,11 @@ body {
   }
 
   .gradient-text {
-    background: var(--gradient-primary);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    /* No gradients: keep accent-only text. */
+    background: none;
+    -webkit-background-clip: initial;
+    -webkit-text-fill-color: currentColor;
+    background-clip: initial;
+    color: var(--theme-accent-main);
   }
 }

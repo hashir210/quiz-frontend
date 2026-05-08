@@ -15,7 +15,10 @@ export default function StudentPlayPage() {
   const { roomCode } = useParams();
   const location = useLocation();
   const code = roomCode || '';
-  const playerName = location.state?.playerName || 'Anonymous';
+  const playerName =
+    location.state?.playerName ||
+    localStorage.getItem(`playerName:${code}`) ||
+    'Anonymous';
 
   const [phase, setPhase] = useState<StudentPhase>('waiting');
   const [question, setQuestion] = useState<any>(null);
@@ -172,7 +175,7 @@ export default function StudentPlayPage() {
       {phase === 'reveal' && isCorrect && (
         <Card className="absolute bottom-8 left-1/2 -translate-x-1/2 px-8 py-4 rounded-xl border-warning animate-score-popup flex flex-col items-center justify-center p-0">
           <div className="px-8 py-4 flex flex-col items-center">
-            <span className="font-mono text-3xl font-bold gradient-text">+{scoreData.points_earned} pts</span>
+            <span className="font-mono text-3xl font-bold text-primary">+{scoreData.points_earned} pts</span>
             <span className="text-sm text-slate-300 mt-1">Great job! 🔥</span>
           </div>
         </Card>
