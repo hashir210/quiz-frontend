@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
+import { staggerContainer, fadeUpItem } from '../components/PageTransition';
 
 function StatBlock({ emoji, value, label }: { emoji: string; value: string | number; label: string }) {
   return (
@@ -18,43 +20,62 @@ function StatBlock({ emoji, value, label }: { emoji: string; value: string | num
 export default function ResultsPage() {
   const navigate = useNavigate();
   const [sessions, setSessions] = useState<any[]>([]);
+  const [stats, setStats] = useState({ total_sessions: 0, total_students: 0, avg_score: 0, best_quiz: '--' });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     api.get('/api/sessions')
-      .then(res => {
-        setSessions(res.data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
-      });
+      .then(res => setSessions(res.data))
+      .catch(err => console.error('Failed to fetch sessions', err))
+      .finally(() => setLoading(false));
+    api.get('/api/sessions/stats')
+      .then(res => setStats(res.data))
+      .catch(err => console.error('Failed to fetch stats', err));
   }, []);
 
   if (loading) return <div className="p-6 text-white">Loading history...</div>;
 
-  const totalSessions = sessions.length;
-  const totalStudents = sessions.reduce((s, h) => s + h.participants_count, 0);
-
   return (
-    <div className="p-6 lg:p-10 space-y-8 bg-[var(--theme-bg-main)] min-h-screen transition-colors duration-300">
-      <div className="space-y-1">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+      className="p-6 lg:p-10 space-y-8 bg-[var(--theme-bg-main)] min-h-screen transition-colors duration-300"
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+        className="space-y-1"
+      >
         <h1 className="font-heading text-3xl lg:text-4xl font-bold text-[var(--theme-text-main)] tracking-tight">
           Results & Analytics
         </h1>
         <p className="text-[var(--theme-text-muted)] text-base font-medium">
           Track performance across all your quiz sessions
         </p>
-      </div>
+      </motion.div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatBlock emoji="🎯" value={totalSessions} label="Total Sessions" />
-        <StatBlock emoji="📊" value="--" label="Avg Score" />
-        <StatBlock emoji="👥" value={totalStudents} label="Total Students" />
-        <StatBlock emoji="🏆" value="--" label="Best Quiz" />
-      </div>
+      {/* Stats — staggered */}
+      <motion.div
+        variants={staggerContainer}
+        initial="initial"
+        animate="animate"
+        className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+      >
+        {[
+          { emoji: '🎯', value: stats.total_sessions, label: 'Total Sessions' },
+          { emoji: '📊', value: stats.avg_score ? stats.avg_score : '--', label: 'Avg Score' },
+          { emoji: '👥', value: stats.total_students, label: 'Total Students' },
+          { emoji: '🏆', value: stats.best_quiz, label: 'Best Quiz' },
+        ].map((s, i) => (
+          <motion.div key={i} variants={fadeUpItem}>
+            <StatBlock {...s} />
+          </motion.div>
+        ))}
+      </motion.div>
 
+      {/* Session History */}
       <div className="space-y-4">
         <div className="flex items-center justify-between border-b border-[var(--theme-border)] pb-4">
           <h2 className="font-heading text-xl font-semibold text-[var(--theme-text-main)]">Session History</h2>
@@ -67,11 +88,15 @@ export default function ResultsPage() {
           <span>Action</span>
         </div>
 
-        <div className="space-y-3">
-          {sessions.map((session) => {
-            return (
+        <motion.div
+          variants={staggerContainer}
+          initial="initial"
+          animate="animate"
+          className="space-y-3"
+        >
+          {sessions.map((session) => (
+            <motion.div key={session.id} variants={fadeUpItem}>
               <Card
-                key={session.id}
                 className="group p-4 md:p-5 border-[var(--theme-border)] hover:border-primary/30 hover:shadow-lg transition-all"
               >
                 <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_1fr] gap-4 items-center">
@@ -93,13 +118,13 @@ export default function ResultsPage() {
                   </Button>
                 </div>
               </Card>
-            );
-          })}
+            </motion.div>
+          ))}
           {sessions.length === 0 && (
             <p className="text-center py-10 text-[var(--theme-text-muted)]">No finished sessions yet.</p>
           )}
-        </div>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 }

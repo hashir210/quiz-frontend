@@ -27,7 +27,12 @@ export default function LobbyPage() {
 
   useEffect(() => {
     if (isConnected) {
-      sendJsonMessage({ event: 'join', name: teacherName, role: 'teacher' });
+      sendJsonMessage({
+        event: 'join',
+        name: teacherName,
+        role: 'teacher',
+        token: localStorage.getItem('token') || '',
+      });
     }
   }, [isConnected, sendJsonMessage, teacherName]);
 

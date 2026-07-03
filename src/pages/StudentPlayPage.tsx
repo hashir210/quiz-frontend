@@ -102,11 +102,33 @@ export default function StudentPlayPage() {
         />
       </div>
 
-      <div className="h-[35vh] flex flex-col items-center justify-center px-4">
-        <h2 className="font-heading text-lg font-semibold text-white text-center leading-snug px-2">
-          {question?.text}
-        </h2>
-      </div>
+      {/* Question area — adapts when image is present */}
+      {question?.image_url ? (
+        <>
+          <div className="h-[20vh] flex items-center justify-center px-4 pt-2">
+            <div className="w-full max-w-[280px] h-full rounded-2xl overflow-hidden border-2 border-white/10 shadow-lg">
+              <img
+                src={question.image_url}
+                alt="Question"
+                className="w-full h-full object-cover"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+          </div>
+          <div className="h-[15vh] flex flex-col items-center justify-center px-4">
+            <h2 className="font-heading text-base sm:text-lg font-semibold text-white text-center leading-snug px-2">
+              {question?.text}
+            </h2>
+          </div>
+        </>
+      ) : (
+        <div className="h-[35vh] flex flex-col items-center justify-center px-4">
+          <h2 className="font-heading text-lg font-semibold text-white text-center leading-snug px-2">
+            {question?.text}
+          </h2>
+        </div>
+      )}
 
       <div className="h-[45vh] grid grid-cols-2 gap-3 px-4 pb-6 content-start">
         {question?.options.map((opt: string, i: number) => {

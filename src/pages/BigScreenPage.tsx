@@ -54,7 +54,12 @@ export default function BigScreenPage() {
 
   useEffect(() => {
     if (isConnected && !quiz) {
-      sendJsonMessage({ event: 'join', name: teacherName, role: 'teacher' });
+      sendJsonMessage({
+        event: 'join',
+        name: teacherName,
+        role: 'teacher',
+        token: localStorage.getItem('token') || '',
+      });
       // Fetch quiz details
       api.get(`/api/sessions/${code}/validate`)
         .then(res => api.get(`/api/quizzes/${res.data.quiz_id}`))
