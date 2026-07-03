@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
 
 const OPTION_COLORS = ['#6366F1', '#06B6D4', '#F59E0B', '#F43F5E'];
 const OPTION_LETTERS = ['A', 'B', 'C', 'D'];
@@ -25,6 +26,7 @@ interface QuestionForm {
 export default function QuizEditorPage() {
   const navigate = useNavigate();
   const { id } = useParams();
+
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(!!id);
   const [title, setTitle] = useState('');
@@ -56,7 +58,7 @@ export default function QuizEditorPage() {
         })
         .catch(err => {
           console.error(err);
-          alert("Failed to load quiz");
+          toast.error('Failed to load quiz');
         })
         .finally(() => setFetching(false));
     }
@@ -107,15 +109,15 @@ export default function QuizEditorPage() {
       setQuestions(updated);
     } catch (err) {
       console.error(err);
-      alert("Image upload failed");
+      toast.error('Image upload failed');
     }
   };
 
   const handlePublish = async () => {
-    if (!title.trim()) return alert("Quiz title is required");
+    if (!title.trim()) return toast.warning('Quiz title is required');
     for (const [i, q] of questions.entries()) {
-      if (!q.text.trim()) return alert(`Question ${i + 1} text is required`);
-      if (q.options.some(o => !o.trim())) return alert(`Question ${i + 1} is missing option text`);
+      if (!q.text.trim()) return toast.warning(`Question ${i + 1} text is required`);
+      if (q.options.some(o => !o.trim())) return toast.warning(`Question ${i + 1} is missing option text`);
     }
 
     setLoading(true);
@@ -159,7 +161,7 @@ export default function QuizEditorPage() {
       navigate('/dashboard');
     } catch (err) {
       console.error(err);
-      alert("Failed to publish quiz");
+      toast.error('Failed to publish quiz');
     } finally {
       setLoading(false);
     }
