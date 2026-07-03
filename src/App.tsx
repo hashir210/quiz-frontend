@@ -1,5 +1,8 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Toaster } from '@/components/ui/sonner';
 import TeacherLayout from './layouts/TeacherLayout';
+import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import MyQuizzesPage from './pages/MyQuizzesPage';
@@ -14,12 +17,23 @@ import TeacherResultsPage from './pages/TeacherResultsPage';
 import StudentEndPage from './pages/StudentEndPage';
 
 export default function App() {
+  useEffect(() => {
+    const theme = localStorage.getItem('theme') || 'dark';
+    if (theme === 'light') {
+      document.documentElement.classList.add('light');
+      document.documentElement.classList.remove('dark');
+    } else {
+      document.documentElement.classList.remove('light');
+      document.documentElement.classList.add('dark');
+    }
+  }, []);
+
   return (
     <BrowserRouter>
       <Routes>
-        {/* Auth */}
+        {/* Public */}
+        <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/" element={<Navigate to="/login" replace />} />
 
         {/* Teacher — sidebar layout */}
         <Route path="/dashboard" element={<TeacherLayout><DashboardPage /></TeacherLayout>} />
@@ -41,6 +55,7 @@ export default function App() {
         <Route path="/play/:roomCode/game" element={<StudentPlayPage />} />
         <Route path="/play/:roomCode/end" element={<StudentEndPage />} />
       </Routes>
+      <Toaster />
     </BrowserRouter>
   );
 }
