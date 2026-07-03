@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@300;400;500;600;700;800;900&family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,8 +6,8 @@
 
 :root {
   /* Common */
-  --font-heading: 'Sora', sans-serif;
-  --font-body: 'Inter', sans-serif;
+  --font-heading: 'Urbanist', sans-serif;
+  --font-body: 'Manrope', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
   --success: #10B981;
@@ -19,6 +19,7 @@
   --confetti-delay: 0s;
 }
 
+/* ── DEITY DARK (Default) ─────────────────────────────── */
 .dark, :root:not(.light) {
   --theme-bg-main: #01030d; /* Deity Dark: Almost absolute black with periwinkle tint */
   --theme-bg-alt: #03071e;
@@ -26,20 +27,36 @@
   --theme-surface-hover: #151b40;
   --theme-border: #1e2554;
   --theme-border-active: #3347ff;
-  
+
   --theme-accent-main: #0019ff;
   --theme-accent-hover: #0014cc;
   --theme-accent-soft: rgba(0, 25, 255, 0.12);
-  
+
   --theme-text-main: #f8fafc;
   --theme-text-muted: #94a3b8;
   --theme-text-dim: #475569;
 
   --gradient-primary: linear-gradient(135deg, #3347ff, #0019ff);
+  --gradient-accent: linear-gradient(135deg, #3347ff, #ec4899);
 
   --glow-accent: 0 0 24px rgba(0, 25, 255, 0.4);
+  --glow-card: 0 0 0 1px rgba(255,255,255,0.03), 0 4px 24px rgba(0,0,0,0.4);
+
+  /* Dynamic mapping variables for Tailwind Slate classes used by Shadcn */
+  --slate-50: var(--theme-text-main);
+  --slate-100: var(--theme-bg-alt);
+  --slate-200: var(--theme-border);
+  --slate-300: var(--theme-text-muted);
+  --slate-400: var(--theme-text-dim);
+  --slate-500: var(--theme-accent-main);
+  --slate-600: var(--theme-accent-hover);
+  --slate-700: var(--theme-surface-hover);
+  --slate-800: var(--theme-border);
+  --slate-900: var(--theme-surface-hover);
+  --slate-950: var(--theme-surface);
 }
 
+/* ── CLEAN LIGHT ─────────────────────────────────────────── */
 .light {
   --theme-bg-main: #fcfdff; /* Very clean light background */
   --theme-bg-alt: #e5e8ff;
@@ -57,13 +74,26 @@
   --theme-text-dim: #6675ff;
 
   --gradient-primary: linear-gradient(135deg, #0019ff, #6675ff);
+  --gradient-accent: linear-gradient(135deg, #0019ff, #ec4899);
 
   --glow-accent: 0 4px 12px rgba(0, 25, 255, 0.15);
+  --glow-card: 0 1px 3px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04);
+
+  /* Dynamic mapping variables for Tailwind Slate classes used by Shadcn */
+  --slate-50: var(--theme-bg-main);
+  --slate-100: var(--theme-bg-alt);
+  --slate-200: var(--theme-border);
+  --slate-300: var(--theme-text-dim);
+  --slate-400: var(--theme-text-muted);
+  --slate-500: var(--theme-accent-main);
+  --slate-600: var(--theme-accent-hover);
+  --slate-700: var(--theme-surface-hover);
+  --slate-800: var(--theme-border);
+  --slate-900: var(--theme-text-main);
+  --slate-950: var(--theme-text-main);
 }
 
-/* ----------------------------------------------------------------------------
-   Theme token aliases (legacy -> theme)
----------------------------------------------------------------------------- */
+/* Legacy aliases */
 :root {
   --bg-primary: var(--theme-bg-main);
   --bg-secondary: var(--theme-bg-alt);
@@ -94,52 +124,33 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Scrollbar styling */
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: var(--theme-bg-main);
-}
-::-webkit-scrollbar-thumb {
-  background: var(--theme-border);
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--theme-text-dim);
-}
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--theme-bg-main); }
+::-webkit-scrollbar-thumb { background: var(--theme-border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--theme-text-dim); }
 
-/* Correct scrollbar selectors */
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: var(--theme-bg-main);
-}
-::-webkit-scrollbar-thumb {
-  background: var(--theme-border);
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--theme-text-dim);
-}
-
-/* Glass Card */
+/* ── Component Layer ─────────────────────────────────────── */
 @layer components {
   .glass-card {
-    @apply bg-navy-700/80 backdrop-blur-xl border border-navy-500 rounded-xl;
-    -webkit-backdrop-filter: blur(16px);
+    background: var(--theme-surface);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--theme-border);
+    border-radius: 16px;
+    box-shadow: var(--glow-card);
+    transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
   }
   .glass-card:hover {
-    border-color: rgba(99, 102, 241, 0.4);
-    box-shadow: 0 0 20px rgba(99, 102, 241, 0.1);
+    border-color: rgba(0, 25, 255, 0.2);
+    box-shadow: var(--glow-card), 0 0 20px rgba(0, 25, 255, 0.06);
   }
 
   .btn-primary {
-    background: var(--accent-primary);
+    background: var(--gradient-primary);
     color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: 12px;
     font-family: var(--font-body);
     font-weight: 600;
     box-shadow: 0 0 20px rgba(0, 25, 255, 0.3);
@@ -147,8 +158,7 @@ body {
     transition: all 200ms ease;
   }
   .btn-primary:hover {
-    background: var(--accent-primary-hover);
-    box-shadow: 0 0 28px rgba(0, 25, 255, 0.5);
+    box-shadow: 0 0 32px rgba(0, 25, 255, 0.5);
     transform: translateY(-1px);
   }
   .btn-primary:active {
@@ -159,7 +169,7 @@ body {
     background: transparent;
     border: 1px solid var(--theme-border);
     color: var(--theme-text-muted);
-    border-radius: 8px;
+    border-radius: 12px;
     cursor: pointer;
     transition: all 200ms ease;
   }
@@ -175,7 +185,7 @@ body {
     background: var(--theme-bg-alt);
     border: 1px solid var(--theme-border);
     color: var(--theme-text-main);
-    border-radius: 8px;
+    border-radius: 12px;
     font-family: var(--font-body);
     outline: none;
     transition: all 200ms ease;
@@ -189,11 +199,39 @@ body {
   }
 
   .gradient-text {
-    /* No gradients: keep accent-only text. */
-    background: none;
-    -webkit-background-clip: initial;
-    -webkit-text-fill-color: currentColor;
-    background-clip: initial;
-    color: var(--theme-accent-main);
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .gradient-text-accent {
+    background: var(--gradient-accent);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
+
+@layer base {
+  :root {
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 234 100% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 235 83% 95%;
+    --sidebar-accent-foreground: 235 100% 20%;
+    --sidebar-border: 232 49% 90%;
+    --sidebar-ring: 234 100% 50%;
+  }
+  .dark, :root:not(.light) {
+    --sidebar-background: 230 62% 10%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 234 100% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 5% 11%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 232 49% 22%;
+    --sidebar-ring: 234 100% 50%;
   }
 }
