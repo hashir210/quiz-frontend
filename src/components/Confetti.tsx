@@ -1,6 +1,6 @@
 import React from 'react';
 
-const CONFETTI_COLORS = ['#3347ff', '#0019ff', '#10B981', '#F59E0B', '#EF4444', '#ccd1ff', '#99a3ff', '#6675ff'];
+const CONFETTI_COLORS = ['#7c3aed', '#a78bfa', '#10B981', '#F59E0B', '#EF4444', '#c4b5fd', '#8b5cf6', '#ec4899'];
 
 interface ConfettiProps {
   count?: number;
